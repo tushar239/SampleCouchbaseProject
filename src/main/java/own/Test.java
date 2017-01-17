@@ -14,6 +14,7 @@ import java.util.concurrent.CountDownLatch;
 /**
  * @author Tushar Chokshi @ 1/16/17.
  */
+// http://docs.couchbase.com/developer/java-2.0/hello-couchbase.html
 public class Test {
     public static void main(String[] args) throws Exception {
 
