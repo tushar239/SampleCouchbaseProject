@@ -9,6 +9,8 @@ import com.couchbase.client.java.document.JsonDocument;
 import com.couchbase.client.java.document.RawJsonDocument;
 import com.couchbase.client.java.document.json.JsonObject;
 
+import java.util.concurrent.CountDownLatch;
+
 /**
  * @author Tushar Chokshi @ 1/16/17.
  */
@@ -51,6 +53,7 @@ public class Test {
             }
 
             // Java 8 style, if you use async()
+            final CountDownLatch latch = new CountDownLatch(1);
             bucket
                     .async()
                     .get("Walter") // returns Observable (like Optional>)
@@ -58,9 +61,12 @@ public class Test {
                         loaded.content().put("age", 52);
                         return bucket.async().replace(loaded);
                     })
-                    .subscribe(updated -> System.out.println("Updated: " + updated.id()));
+                    .subscribe(updated -> {
+                        System.out.println("Updated: " + updated.id());
+                        latch.countDown();
+                    });
 
-            Thread.sleep(1000);
+            latch.await();
 
         } finally {
             cluster.disconnect();
