@@ -53,21 +53,23 @@ public class Test {
                 }
             }
 
-            // Java 8 style, if you use async()
-            final CountDownLatch latch = new CountDownLatch(1);
-            bucket
-                    .async()
-                    .get("Walter") // returns Observable (like Optional>)
-                    .flatMap(loaded -> {
-                        loaded.content().put("age", 52);
-                        return bucket.async().replace(loaded);
-                    })
-                    .subscribe(updated -> {
-                        System.out.println("Updated: " + updated.id());
-                        latch.countDown();
-                    });
+            {
+                // Java 8 style, if you use async()
+                final CountDownLatch latch = new CountDownLatch(1);
+                bucket
+                        .async()
+                        .get("Walter") // returns Observable (like Optional>)
+                        .flatMap(loaded -> {
+                            loaded.content().put("age", 52);
+                            return bucket.async().replace(loaded);
+                        })
+                        .subscribe(updated -> {
+                            System.out.println("Updated: " + updated.id());
+                            latch.countDown();
+                        });
 
-            latch.await();
+                latch.await();
+            }
 
         } finally {
             cluster.disconnect();
