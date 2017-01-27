@@ -13,8 +13,17 @@ What's needed?
 
 - The beer-sample sample bucket
 
-- The beer/brewery_beers view (built in in beersample sample)
+- The beer/brewery_beers view (built in beer-sample sample)
+  If it is not built-in, then you can build it using below map function
+
+    function (doc, meta) {
+      if(doc.type == "beer" && doc.brewery_id) {
+        emit(doc.brewery_id, meta.id);
+      }
+    }
+
 - An additional view beer/by_name with the following map function (you should copy the beer designdoc to dev in order to edit it and add this view):
+
     function (doc, meta) {
        if (doc.type == "beer") {
          emit(doc.name, doc.brewery_id)
