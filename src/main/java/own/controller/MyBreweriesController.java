@@ -36,6 +36,7 @@ public class MyBreweriesController {
         this.couchbaseService = couchbaseService;
     }
 
+    // http://localhost:8080/mybrewery/appalachian_brewing_company
     @RequestMapping("/{id}")
     public ResponseEntity<String> getBrewery(@PathVariable String id) {
 
