@@ -1,4 +1,4 @@
-package own;
+package own.bucketqueriesexample;
 
 import com.couchbase.client.deps.com.fasterxml.jackson.annotation.JsonCreator;
 import com.couchbase.client.deps.com.fasterxml.jackson.annotation.JsonIgnoreProperties;

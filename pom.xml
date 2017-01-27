@@ -6,7 +6,13 @@
 
     <groupId>sample.couchbase.project</groupId>
     <artifactId>sample.couchbase.project</artifactId>
+    <packaging>pom</packaging>
     <version>1.0.0</version>
+<!--
+    <modules>
+        <module>../SampleCouchbaseWithSpringDataProject</module>
+    </modules>
+-->
 
 
     <parent>
@@ -37,11 +43,21 @@
         </dependency>
 
         <!-- security for bcrypt support -->
+        <!--<dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-config</artifactId>
+            <version>3.2.5.RELEASE</version>
+        </dependency>
         <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-core</artifactId>
-            <version>4.0.1.RELEASE</version>
+            <version>3.2.5.RELEASE</version>
         </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-web</artifactId>
+            <version>3.2.5.RELEASE</version>
+        </dependency>-->
 
     </dependencies>
 

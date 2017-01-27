@@ -1,6 +1,5 @@
-package beerbucketsample;
+package own.service;
 
-import beerbucketsample.config.Database;
 import com.couchbase.client.java.Bucket;
 import com.couchbase.client.java.Cluster;
 import com.couchbase.client.java.CouchbaseCluster;
@@ -13,35 +12,37 @@ import com.couchbase.client.java.view.ViewQuery;
 import com.couchbase.client.java.view.ViewResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import own.config.MyDatabaseConfig;
 import rx.Observable;
-import rx.functions.Action2;
-import rx.functions.Func0;
-import rx.functions.Func1;
 import rx.functions.Func2;
 
 import javax.annotation.PreDestroy;
 import java.util.List;
 
+// http://docs.couchbase.com/developer/java-2.1/tutorial.html
+
 /**
- * @author Tushar Chokshi @ 1/17/17.
+ * @author Tushar Chokshi @ 1/27/17.
  */
 @Service
-public class CouchbaseService {
-
-    private final Database config;
+public class MyCouchbaseService {
+    private final MyDatabaseConfig myDatabaseConfig;
 
     private final Bucket bucket;
     private final Cluster cluster;
 
     @Autowired
-    public CouchbaseService(final Database config) {
-        this.config = config;
+    public MyCouchbaseService(final MyDatabaseConfig myDatabaseConfig) {
+        this.myDatabaseConfig = myDatabaseConfig;
 
-        //connect to the cluster and open the configured bucket
-        this.cluster = CouchbaseCluster.create(config.getNodes());
-        this.bucket = cluster.openBucket(config.getBucket(), config.getPassword());
+        //  creates a new Couchbase connection object and makes the initial connection to the cluster. In this example, we supply a list of IP addresses obtained from the Database configuration object, populated by Spring Boot with the contents of the application.yml file. You can supply a string, or several strings concatenated with commas so that it can fall back to another node should a connection to a single node fail.
+        this.cluster = CouchbaseCluster.create(myDatabaseConfig.getNodes());
+
+        // creates a connection to the bucket defined in the configuration. The Couchbase Java SDK provides both synchronous and asynchronous APIs that allow you to harness easily the power of asynchronous computation while maintaining the simplicity of synchronous operations. In this case, we are choosing to connect to both the cluster and the bucket synchronously as most of our application will be required to be synchronous, loading data before a web page can be generated. However, the asynchronous API is explained later on for use in creating view queries.
+        this.bucket = cluster.openBucket(myDatabaseConfig.getBucket(), myDatabaseConfig.getPassword());
     }
 
+    // The disconnect method is included even though it is not explicitly called in this example. Spring framework will invoke the method annotated with PreDestroy when destroying the context and shutting down the application.
     @PreDestroy
     public void preDestroy() {
         if (this.cluster != null) {
@@ -50,52 +51,26 @@ public class CouchbaseService {
     }
 
     /**
-     * Prepare a new JsonDocument with some JSON content
-     */
-    public static JsonDocument createDocument(String id, JsonObject content) {
-        return JsonDocument.create(id, content);
-    }
-
-    /**
-     * CREATE the document in database
-     *
-     * @return the created document, with up to date metadata
-     */
-    public JsonDocument create(JsonDocument doc) {
-        return bucket.insert(doc);
-    }
-
-    /**
-     * READ the document from database
+     * READ the document from database for a given doc id
+     * <p>
+     * When data is stored in Couchbase as JSON, it will be converted by the Java SDK into a JsonDocument object. This allows you to use a very simple JSON library, built into the Couchbase SDK, to access, modify and re-save the data held in the document.
+     * <p>
+     * Another important aspect is error management. When the document doesn't exist, the SDK simply returns null. But should another error condition arise, a specific exception will be thrown (like a TimeOutException wrapped in a RuntimeException if the server couldn't respond in time). So it is important to ensure that your application can handle the errors that the SDK will pass up to it.
      */
     public JsonDocument read(String id) {
         return bucket.get(id);
     }
 
     /**
-     * UPDATE the document in database
-     *
-     * @return the updated document, with up to date metadata
+     * READ the document asynchronously from database.
      */
-    public JsonDocument update(JsonDocument doc) {
-        return bucket.replace(doc);
+    public Observable<JsonDocument> asyncRead(String id) {
+        return bucket.async().get(id);
     }
 
     /**
-     * DELETE the document from database
-     *
-     * @return the deleted document, with only metadata (since content has been deleted)
-     */
-    public JsonDocument delete(String id) {
-        return bucket.remove(id);
-    }
-
-    /**
-     * Uses a view query to find all beers. Possibly use an offset and a limit of the
-     * number of beers to retrieve.
-     *
-     * @param offset the number of beers to skip, null or < 1 to ignore
-     * @param limit  the limit of beers to retrieve, null or < 1 to ignore
+     * This method is querying a View 'by_name' and retrieves document ids from a view. All these information is stored in ViewQuery.
+     * After that you use this ViewQuery to query a Bucket.
      */
     public ViewResult findAllBeers(Integer offset, Integer limit) {
         ViewQuery query = ViewQuery.from("beer", "by_name");
@@ -108,7 +83,6 @@ public class CouchbaseService {
         ViewResult result = bucket.query(query);
         return result;
     }
-
     /**
      * Retrieves all the beers using a view query, returning the result asynchronously.
      */
@@ -118,10 +92,28 @@ public class CouchbaseService {
     }
 
     /**
-     * READ the document asynchronously from database.
+     * From an async stream of all the beers and a search token, returns a stream
+     * emitting a single JSON array. The array contains data for all matching beers,
+     * each represented by three attributes: "id" (the beer's key), "name" (the beer's name)
+     * and "detail" (the beers whole document content).
      */
-    public Observable<JsonDocument> asyncRead(String id) {
-        return bucket.async().get(id);
+
+    public Observable<JsonArray> searchBeer(Observable<AsyncViewRow> allBeers, final String token) {
+
+        // Observable is just like Optional
+        Observable<JsonDocument> jsonDocumentObservable = allBeers.flatMap(asyncViewRow -> asyncViewRow.document());
+
+        Observable<JsonObject> jsonObjectObservable = jsonDocumentObservable.map(jd -> JsonObject.create().put("id", jd.id()).put("name", jd.content().getString("name")).put("detail", jd.content()));
+
+        //reject beers that don't match the partial name
+        Observable<JsonObject> filteredJsonObject = jsonObjectObservable.filter(jo -> {
+            String name = jo.getString("name");
+            return name != null && name.toLowerCase().contains(token.toLowerCase());
+        });
+
+        Observable<JsonArray> jsonArrayObservable = filteredJsonObject.collect(() -> JsonArray.empty(), (jsonArray, jsonObject) -> jsonArray.add(jsonObject));
+        return jsonArrayObservable;
+
     }
 
     /**
@@ -178,52 +170,4 @@ public class CouchbaseService {
                 });
     }
 
-    //===== Here is a more advanced example, using Async API to search in Beer names =====
-
-    /**
-     * From an async stream of all the beers and a search token, returns a stream
-     * emitting a single JSON array. The array contains data for all matching beers,
-     * each represented by three attributes: "id" (the beer's key), "name" (the beer's name)
-     * and "detail" (the beers whole document content).
-     */
-    public Observable<JsonArray> searchBeer(Observable<AsyncViewRow> allBeers, final String token) {
-        return allBeers
-                //extract the document from the row and carve a result object using its content and id
-                .flatMap(new Func1<AsyncViewRow, Observable<JsonObject>>() {
-                    @Override
-                    public Observable<JsonObject> call(AsyncViewRow row) {
-                        return row.document().map(new Func1<JsonDocument, JsonObject>() {
-                            @Override
-                            public JsonObject call(JsonDocument jsonDocument) {
-                                return JsonObject.create()
-                                        .put("id", jsonDocument.id())
-                                        .put("name", jsonDocument.content().getString("name"))
-                                        .put("detail", jsonDocument.content());
-                            }
-                        });
-                    }
-                })
-                //reject beers that don't match the partial name
-                .filter(new Func1<JsonObject, Boolean>() {
-                    @Override
-                    public Boolean call(JsonObject jsonObject) {
-                        String name = jsonObject.getString("name");
-                        return name != null && name.toLowerCase().contains(token.toLowerCase());
-                    }
-                })
-                //collect results into a JSON array (one could also just use toList() since a List would be
-                // transcoded into a JSON array)
-                .collect(new Func0<JsonArray>() { //this creates the array (once)
-                    @Override
-                    public JsonArray call() {
-                        return JsonArray.empty();
-                    }
-                }, new Action2<JsonArray, JsonObject>() { //this populates the array (each item)
-                    @Override
-                    public void call(JsonArray objects, JsonObject jsonObject) {
-                        objects.add(jsonObject);
-                    }
-                });
-    }
 }
-

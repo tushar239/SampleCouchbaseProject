@@ -1,4 +1,4 @@
-package beerbucketsample.config;
+package own.config;
 
 /**
  * @author Tushar Chokshi @ 1/17/17.
@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Configuration
-public class Database {
+public class MyDatabaseConfig {
 
     @Value("${couchbase.nodes}")
     private List<String> nodes = new ArrayList<>();

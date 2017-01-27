@@ -1,6 +1,5 @@
-package beerbucketsample.breweries;
+package own.controller;
 
-import beerbucketsample.CouchbaseService;
 import com.couchbase.client.java.document.JsonDocument;
 import com.couchbase.client.java.document.json.JsonObject;
 import com.couchbase.client.java.view.AsyncViewResult;
@@ -15,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import own.service.MyCouchbaseService;
 import rx.Observable;
 import rx.functions.Func1;
 
@@ -24,22 +24,22 @@ import java.util.List;
  * @author Tushar Chokshi @ 1/17/17.
  */
 @RestController
-@RequestMapping(value = "/brewery", produces = MediaType.APPLICATION_JSON_VALUE)
-public class BreweriesController {
+@RequestMapping(value = "/mybrewery", produces = MediaType.APPLICATION_JSON_VALUE)
+public class MyBreweriesController {
 
-    private static final Logger LOGGER =  LoggerFactory.getLogger(BreweriesController.class);
+    private static final Logger LOGGER =  LoggerFactory.getLogger(MyBreweriesController.class);
 
-    private final CouchbaseService couchbaseService;
+    private final MyCouchbaseService couchbaseService;
 
     @Autowired
-    public BreweriesController(final CouchbaseService couchbaseService) {
+    public MyBreweriesController(final MyCouchbaseService couchbaseService) {
         this.couchbaseService = couchbaseService;
     }
 
     @RequestMapping("/{id}")
     public ResponseEntity<String> getBrewery(@PathVariable String id) {
 
-        ViewQuery forBrewery = CouchbaseService.createQueryBeersForBrewery(id);
+        ViewQuery forBrewery = MyCouchbaseService.createQueryBeersForBrewery(id);
 
         Observable<JsonDocument> brewery = couchbaseService.asyncRead(id);
         Observable<List<JsonDocument>> beers =

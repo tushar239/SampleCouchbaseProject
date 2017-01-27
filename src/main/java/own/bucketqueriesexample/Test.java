@@ -1,4 +1,4 @@
-package own;
+package own.bucketqueriesexample;
 
 import com.couchbase.client.deps.com.fasterxml.jackson.core.JsonProcessingException;
 import com.couchbase.client.deps.com.fasterxml.jackson.databind.ObjectMapper;
@@ -20,7 +20,6 @@ public class Test {
 
         // You do not need to pass in all nodes of the cluster, just a few seed nodes so that the client is able to establish initial contact.
         Cluster cluster = CouchbaseCluster.create("127.0.0.1");
-
 
         try {
 
@@ -54,7 +53,7 @@ public class Test {
             }
 
             {
-                // Java 8 style, if you use async()
+                // This code is based on RxJava (Reactive pattern)
                 final CountDownLatch latch = new CountDownLatch(1);
                 bucket
                         .async()
