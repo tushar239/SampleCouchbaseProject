@@ -71,9 +71,10 @@ public class MyCouchbaseService {
     /**
      * This method is querying a View 'by_name' and retrieves document ids from a view. All these information is stored in ViewQuery.
      * After that you use this ViewQuery to query a Bucket.
+     * You can actually all features to filter the records from a view (like group, grouplevel, reduce, startKey/endKey etc.)
      */
     public ViewResult findAllBeers(Integer offset, Integer limit) {
-        ViewQuery query = ViewQuery.from("beer", "by_name");
+        ViewQuery query = ViewQuery.from("beer" /*design document name*/, "by_name" /*view name*/);
         if (limit != null && limit > 0) {
             query.limit(limit);
         }
@@ -85,6 +86,8 @@ public class MyCouchbaseService {
     }
     /**
      * Retrieves all the beers using a view query, returning the result asynchronously.
+     *
+     * Async operations use RxJava (Reactive Java library)'s Observable feature.
      */
     public Observable<AsyncViewResult> findAllBeersAsync() {
         ViewQuery allBeers = ViewQuery.from("beer", "by_name");
