@@ -3,6 +3,8 @@ package own.controller;
 import com.couchbase.client.java.document.JsonDocument;
 import com.couchbase.client.java.document.json.JsonArray;
 import com.couchbase.client.java.document.json.JsonObject;
+import com.couchbase.client.java.query.N1qlQueryResult;
+import com.couchbase.client.java.query.N1qlQueryRow;
 import com.couchbase.client.java.view.AsyncViewResult;
 import com.couchbase.client.java.view.ViewResult;
 import com.couchbase.client.java.view.ViewRow;
@@ -18,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 import own.service.MyCouchbaseService;
 
 import java.util.Iterator;
+import java.util.Optional;
 
 /**
  * @author Tushar Chokshi @ 1/27/17.
@@ -44,9 +47,34 @@ public class MyBeerController {
         }
     }
 
-    // http://localhost:8080/mybeer
-    // http://localhost:8080/mybeer?offset=0&limit=10
-    @RequestMapping(method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    // http://localhost:8080/mybeer/usingN1QlQuery
+    @RequestMapping(value = "/usingN1QlQuery", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<String> listBeersUsingN1QLQuery() {
+        N1qlQueryResult n1qlQueryResult = myCouchbaseService.readUsingN1QLQuery();
+
+        if(!n1qlQueryResult.finalSuccess()) {
+            //TODO maybe detect type of error and change error code accordingly
+            return new ResponseEntity<>(n1qlQueryResult.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+
+        JsonArray result = JsonArray.create();
+
+        Optional.ofNullable(n1qlQueryResult)
+                .map(n1qlQueryRes -> n1qlQueryRes.allRows())
+                .ifPresent(rows -> {
+                    for (N1qlQueryRow row : rows) {
+                        JsonObject value = row.value();
+                        result.add(value);
+                    }
+                });
+
+        return new ResponseEntity<>(result.toString(), HttpStatus.OK);
+
+    }
+
+    // http://localhost:8080/mybeer/usingViewQuery
+    // http://localhost:8080/mybeer/usingViewQuery?offset=0&limit=10
+    @RequestMapping(value = "/usingViewQuery", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> listBeers(@RequestParam(required = false) Integer offset,
                                             @RequestParam(required = false) Integer limit) {
         ViewResult result = myCouchbaseService.findAllBeers(offset, limit);

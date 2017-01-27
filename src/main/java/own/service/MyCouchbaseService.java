@@ -6,6 +6,10 @@ import com.couchbase.client.java.CouchbaseCluster;
 import com.couchbase.client.java.document.JsonDocument;
 import com.couchbase.client.java.document.json.JsonArray;
 import com.couchbase.client.java.document.json.JsonObject;
+import com.couchbase.client.java.query.N1qlQuery;
+import com.couchbase.client.java.query.N1qlQueryResult;
+import com.couchbase.client.java.query.ParameterizedN1qlQuery;
+import com.couchbase.client.java.query.Statement;
 import com.couchbase.client.java.view.AsyncViewResult;
 import com.couchbase.client.java.view.AsyncViewRow;
 import com.couchbase.client.java.view.ViewQuery;
@@ -19,11 +23,24 @@ import rx.functions.Func2;
 import javax.annotation.PreDestroy;
 import java.util.List;
 
-// http://docs.couchbase.com/developer/java-2.1/tutorial.html
+import static com.couchbase.client.java.query.Select.select;
+import static com.couchbase.client.java.query.dsl.Expression.i;
+import static com.couchbase.client.java.query.dsl.Expression.x;
 
-/**
- * @author Tushar Chokshi @ 1/27/17.
- */
+
+/*
+ http://docs.couchbase.com/developer/java-2.1/tutorial.html
+ https://developer.couchbase.com/documentation/server/current/sdk/java/n1ql-queries-with-sdk.html
+
+ This class shows 3 ways to retrieve documents from Couchbase
+ 1. Directly from the bucket using document id (bucket.get(id))
+ 2. Directly from the bucket using N1QlQuery
+ 3. Retrieve document ids from the View and create a ViewQuery and using that ViewQuery, query a Bucket to retrieve the documents.
+
+ Bucket can be queried Synchronously or Asynchronously.
+ Asynchronous approach uses RxJava(Reactive Pattern)
+*/
+
 @Service
 public class MyCouchbaseService {
     private final MyDatabaseConfig myDatabaseConfig;
@@ -67,6 +84,30 @@ public class MyCouchbaseService {
     public Observable<JsonDocument> asyncRead(String id) {
         return bucket.async().get(id);
     }
+
+    /**
+     * https://developer.couchbase.com/documentation/server/current/sdk/java/n1ql-queries-with-sdk.html
+     *
+     * READ the documents from Bucket using
+     */
+    public N1qlQueryResult readUsingN1QLQuery() {
+        Statement statement =
+                select("name", "category", "abv")
+                .from(i("beer-sample"))
+                        .where(x("type").eq(x("$type"))
+                                .and(x("abv").gt(x("$abv"))))
+                        .limit(10);
+
+        JsonObject placeholderValues = JsonObject.create().put("type", "beer").put("abv", 0);
+
+        ParameterizedN1qlQuery parameterizedQuery = N1qlQuery.parameterized(statement, placeholderValues);
+
+        N1qlQueryResult queryResult = bucket.query(parameterizedQuery);
+
+        return queryResult;
+
+    }
+
 
     /**
      * This method is querying a View 'by_name' and retrieves document ids from a view. All these information is stored in ViewQuery.
