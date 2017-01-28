@@ -91,6 +91,13 @@ public class MyCouchbaseService {
      * READ the documents from Bucket using
      */
     public N1qlQueryResult readUsingN1QLQuery() {
+        // To use normal query, use N1qlQuery.simple
+        // Using N1qlParams to set adhoc as false for using prepared statements
+        // N1qlParams params = N1qlParams.build().adhoc(false);
+        // N1qlQuery query = N1qlQuery.simple("select count(*) from `mybucket`", params);
+
+        // To use Parameterized query, use N1qlQuery.parameterized
+
         Statement statement =
                 select("name", "category", "abv")
                 .from(i("beer-sample"))
