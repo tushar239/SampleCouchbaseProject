@@ -88,16 +88,15 @@ public class MyCouchbaseService {
     /**
      * https://developer.couchbase.com/documentation/server/current/sdk/java/n1ql-queries-with-sdk.html
      *
-     * READ the documents from Bucket using
+     * READ the documents from Bucket using N1qlQuery.
      */
     public N1qlQueryResult readUsingN1QLQuery() {
-        // To use normal query, use N1qlQuery.simple
+        // To use normal query (non-parameterized), use N1qlQuery.simple
         // Using N1qlParams to set adhoc as false for using prepared statements
         // N1qlParams params = N1qlParams.build().adhoc(false);
         // N1qlQuery query = N1qlQuery.simple("select count(*) from `mybucket`", params);
 
         // To use Parameterized query, use N1qlQuery.parameterized
-
         Statement statement =
                 select("name", "category", "abv")
                 .from(i("beer-sample"))
@@ -118,11 +117,28 @@ public class MyCouchbaseService {
 
     /**
      * This method is querying a View 'by_name' and retrieves document ids from a view. All these information is stored in ViewQuery.
-     * After that you use this ViewQuery to query a Bucket.
+     *
+     * View
+     *     function (doc, meta) {
+     *          if (doc.type == "beer") {
+     *              emit(doc.name, doc.brewery_id)
+     *          }
+     *      }
+     *  If you want, you can set a reducer '_count' also to test your ViewQuery with group=true
+     *
+     * Once ViewQuery is executed, you can retrieve view's key, value and doc id (basically all elements stored in the view)
+     * It doesn't query a bucket at this time even thought you are executing a ViewQuery using bucket.query(viewQuery).
+     * The only purpose to go to bucket is to fetch a document. By default, includeDocs=false in ViewQuery. It means that unless you try to fetch a row viewRow.document(), it won't go to bucket.
+     * If you set includeDocs=true, then after executing a ViewQuery, it will go to bucket immediately to fetch the document.
+     *
      * You can actually all features to filter the records from a view (like group, grouplevel, reduce, startKey/endKey etc.)
      */
     public ViewResult findAllBeers(Integer offset, Integer limit) {
         ViewQuery query = ViewQuery.from("beer" /*design document name*/, "by_name" /*view name*/);
+        query.reduce(false); // if you have a reduce function in a view and if you don't want to use it then set reduce=false
+        //query.includeDocs(false); // default
+        //query.group(); // group or group-level can be used only if you have a reduce function in a view, otherwise you will get an error 'Invalid URL parameter 'group' or  'group_level' for non-reduce view.'
+
         if (limit != null && limit > 0) {
             query.limit(limit);
         }

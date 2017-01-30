@@ -30,6 +30,7 @@ What's needed?
        }
      }
 
+    If you want, you can set a reducer '_count' also to test your ViewQuery with group=true
 
 Building and running
 --------------------

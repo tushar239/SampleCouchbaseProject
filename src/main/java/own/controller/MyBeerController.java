@@ -87,8 +87,11 @@ public class MyBeerController {
             while (iter.hasNext()) {
                 ViewRow row = iter.next();
                 JsonObject beer = JsonObject.create();
-                beer.put("name", row.key());
-                beer.put("id", row.id());
+                beer.put("id", row.id()); // doc id
+                beer.put("name", row.key()); // view key
+                beer.put("value", row.value().toString()); // value of a view row
+                beer.put("document", row.document().toString());
+
                 keys.add(beer);
             }
             return new ResponseEntity<>(keys.toString(), HttpStatus.OK);
