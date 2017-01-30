@@ -35,7 +35,7 @@ import static com.couchbase.client.java.query.dsl.Expression.x;
  This class shows 3 ways to retrieve documents from Couchbase
  1. Directly from the bucket using document id (bucket.get(id))
  2. Directly from the bucket using N1QlQuery
- 3. Retrieve document ids from the View and create a ViewQuery and using that ViewQuery, query a Bucket to retrieve the documents.
+ 3. Use ViewQuery to query a View. This will give you doc id, view key, view value. If you want, you can make spring to retrieve a document from a bucket eagerly or lazily along with View data. ViewQuery has a property includeDocs that makes it eager or lazy. If it is false (default), then unless you do viewRow.document(), it won't go to bucket to fetch a document based on doc id retrieved from a view.
 
  Bucket can be queried Synchronously or Asynchronously.
  Asynchronous approach uses RxJava(Reactive Pattern)
