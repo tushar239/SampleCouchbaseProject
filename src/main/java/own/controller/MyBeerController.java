@@ -87,10 +87,10 @@ public class MyBeerController {
             while (iter.hasNext()) {
                 ViewRow row = iter.next();
                 JsonObject beer = JsonObject.create();
-                beer.put("id", row.id()); // doc id
-                beer.put("name", row.key()); // view key
-                beer.put("value", row.value().toString()); // value of a view row
-                beer.put("document", row.document().toString());
+                beer.put("doc id", row.id()); // doc id
+                beer.put("view key", row.key()); // view key
+                beer.put("view value", row.value().toString()); // view value
+                beer.put("document from bucket", row.document().toString()); // document retrieved from bucket
 
                 keys.add(beer);
             }
