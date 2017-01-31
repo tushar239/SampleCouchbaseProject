@@ -109,7 +109,8 @@ public class MyCouchbaseService {
 
         N1qlParams params = N1qlParams.build();
 
-        // Setting Read-Level Consistency when reading from Bucket
+        // Unlike to other NoSql DBs, in couchbase, write consistency is set during read time
+        // Setting Consistency when reading from Bucket
         // https://developer.couchbase.com/documentation/server/current/architecture/querying-data-with-n1ql.html
 
         // Indexes are eventual consistent in couchbase. So, there is a possibility that when you query the documents, you may get stale data. e.g. if a new document is inserted, but it's id is still not there in the index (index is not yet udpated), then your select query may not be able to fetch that document.
@@ -148,8 +149,10 @@ public class MyCouchbaseService {
     public ViewResult findAllBeers(Integer offset, Integer limit) {
         ViewQuery query = ViewQuery.from("beer" /*design document name*/, "by_name" /*view name*/);
 
-        // Setting Read-Level Consistency when reading from View
+        // Unlike to other NoSql DBs, in couchbase, write consistency is set during read time
+        // Setting Consistency when reading from View
         // https://developer.couchbase.com/documentation/server/current/indexes/mapreduce-view-consistency.html
+
         // There are different values of 'stale' parameters (ok,false,update_after) that you can set.
         // stale=ok means read existing index (no need to update the index before reading)
         // stale=false means update the index with latest documents first and return the result of the query
