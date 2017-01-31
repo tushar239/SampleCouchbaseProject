@@ -109,10 +109,11 @@ public class MyCouchbaseService {
 
         N1qlParams params = N1qlParams.build();
 
-        // setting consistency level
+        // Setting Read-Level Consistency when reading from Bucket
         // https://developer.couchbase.com/documentation/server/current/architecture/querying-data-with-n1ql.html
+
         // Indexes are eventual consistent in couchbase. So, there is a possibility that when you query the documents, you may get stale data. e.g. if a new document is inserted, but it's id is still not there in the index (index is not yet udpated), then your select query may not be able to fetch that document.
-        // There are various consitency levels in couchbase that you can set. By default, spring considers REQUEST_PLUS consistency. It means a query can read its own write (if you are inserting the document using, then insert query should be able to read its write and return you a document id properly.
+        // There are various consistency levels in couchbase that you can set. By default, spring considers REQUEST_PLUS consistency. It means a query can read its own write (if you are inserting the document using, then insert query should be able to read its write and return you a document id properly.
         // If you set NOT_BOUNDED, then it may not happen.
         // STATEMENT_PLUS is the highest level of consisteny. It ensures that indexes are properly updated before your query is returned.
 
@@ -146,6 +147,15 @@ public class MyCouchbaseService {
      */
     public ViewResult findAllBeers(Integer offset, Integer limit) {
         ViewQuery query = ViewQuery.from("beer" /*design document name*/, "by_name" /*view name*/);
+
+        // Setting Read-Level Consistency when reading from View
+        // https://developer.couchbase.com/documentation/server/current/indexes/mapreduce-view-consistency.html
+        // There are different values of 'stale' parameters (ok,false,update_after) that you can set.
+        // stale=ok means read existing index (no need to update the index before reading)
+        // stale=false means update the index with latest documents first and return the result of the query
+        // stale=update_after means return the result of the query from existing index and then update the index with latest documents.
+
+        //query.stale(Stale.UPDATE_AFTER);
         query.reduce(false); // if you have a reduce function in a view and if you don't want to use it then set reduce=false
         //query.includeDocs(false); // default
         //query.group(); // group or group-level can be used only if you have a reduce function in a view, otherwise you will get an error 'Invalid URL parameter 'group' or  'group_level' for non-reduce view.'
