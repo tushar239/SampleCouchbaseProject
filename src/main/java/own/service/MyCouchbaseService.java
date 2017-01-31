@@ -6,6 +6,7 @@ import com.couchbase.client.java.CouchbaseCluster;
 import com.couchbase.client.java.document.JsonDocument;
 import com.couchbase.client.java.document.json.JsonArray;
 import com.couchbase.client.java.document.json.JsonObject;
+import com.couchbase.client.java.query.N1qlParams;
 import com.couchbase.client.java.query.N1qlQuery;
 import com.couchbase.client.java.query.N1qlQueryResult;
 import com.couchbase.client.java.query.ParameterizedN1qlQuery;
@@ -106,7 +107,17 @@ public class MyCouchbaseService {
 
         JsonObject placeholderValues = JsonObject.create().put("type", "beer").put("abv", 0);
 
-        ParameterizedN1qlQuery parameterizedQuery = N1qlQuery.parameterized(statement, placeholderValues);
+        N1qlParams params = N1qlParams.build();
+
+        // setting consistency level
+        // https://developer.couchbase.com/documentation/server/current/architecture/querying-data-with-n1ql.html
+        // Indexes are eventual consistent in couchbase. So, there is a possibility that when you query the documents, you may get stale data. e.g. if a new document is inserted, but it's id is still not there in the index (index is not yet udpated), then your select query may not be able to fetch that document.
+        // There are various consitency levels in couchbase that you can set. By default, spring considers REQUEST_PLUS consistency. It means a query can read its own write (if you are inserting the document using, then insert query should be able to read its write and return you a document id properly.
+        // If you set NOT_BOUNDED, then it may not happen.
+        // STATEMENT_PLUS is the highest level of consisteny. It ensures that indexes are properly updated before your query is returned.
+
+        //params.consistency(ScanConsistency.STATEMENT_PLUS);
+        ParameterizedN1qlQuery parameterizedQuery = N1qlQuery.parameterized(statement, placeholderValues, params);
 
         N1qlQueryResult queryResult = bucket.query(parameterizedQuery);
 
